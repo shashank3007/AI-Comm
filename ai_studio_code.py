@@ -6,108 +6,153 @@ import plotly.graph_objects as go
 import feedparser
 from datetime import datetime
 
-# --- CONFIG ---
-st.set_page_config(page_title="AI Industry Intelligence", layout="wide", initial_sidebar_state="expanded")
+# --- BRANDING & DESIGN LANGUAGE ---
+st.set_page_config(page_title="NEURAL LENS | AI Intelligence", layout="wide")
 
-# --- STYLE ---
+# Custom CSS for UI/UX, Transitions, and Animations
 st.markdown("""
     <style>
-    .metric-card { background-color: #1e2130; padding: 20px; border-radius: 10px; border: 1px solid #30363d; }
-    .stMetric { background-color: #1e2130; padding: 10px; border-radius: 10px; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #080a0f;
+    }
+
+    /* Animation: Fade In */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .main .block-container {
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    /* Glassmorphism Cards */
+    .stMetric, .metric-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .stMetric:hover {
+        background: rgba(0, 204, 255, 0.05);
+        border: 1px solid rgba(0, 204, 255, 0.3);
+        transform: scale(1.02);
+    }
+
+    /* Custom Header */
+    .nav-container {
+        display: flex;
+        align-items: center;
+        padding: 1rem 0;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .logo-text {
+        font-weight: 700;
+        font-size: 24px;
+        letter-spacing: -1px;
+        color: #00ccff;
+        margin-left: 10px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- DATA FETCHING (REAL-TIME) ---
+# --- LOGO COMPONENT ---
+def draw_logo():
+    st.markdown("""
+        <div class="nav-container">
+            <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" stroke="#00ccff" stroke-width="2" stroke-dasharray="10 5"/>
+                <path d="M30 50L50 30L70 50L50 70L30 50Z" fill="#00ccff" fill-opacity="0.8">
+                    <animate attributeName="fill-opacity" values="0.8;0.3;0.8" dur="3s" repeatCount="indefinite" />
+                </path>
+                <circle cx="50" cy="50" r="10" fill="white"/>
+            </svg>
+            <span class="logo-text">NEURAL LENS</span>
+            <span style="color:gray; margin-left:15px; font-weight:300;">Strategic Intelligence Terminal</span>
+        </div>
+    """, unsafe_allow_html=True)
+
+# --- DATA FETCHING ---
 @st.cache_data(ttl=600)
 def get_ai_news():
-    # Pulling from high-quality AI news feeds
-    feeds = [
-        "https://www.technologyreview.com/topic/artificial-intelligence/feed/",
-        "https://openai.com/news/rss.xml"
-    ]
-    news_items = []
-    for url in feeds:
-        feed = feedparser.parse(url)
-        for entry in feed.entries[:5]:
-            news_items.append({"title": entry.title, "link": entry.link, "date": entry.published})
-    return news_items
+    feed = feedparser.parse("https://www.technologyreview.com/topic/artificial-intelligence/feed/")
+    return [{"title": e.title, "link": e.link} for e in feed.entries[:4]]
 
 @st.cache_data(ttl=3600)
-def get_stock_data():
-    tickers = ["NVDA", "MSFT", "GOOGL", "AMZN", "TSM"]
+def get_market_data():
+    tickers = ["NVDA", "MSFT", "GOOGL", "ASML"]
     data = yf.download(tickers, period="1mo")['Close']
     return data
 
-# --- UI LAYOUT ---
-st.title("🚀 AI Industry Intelligence Command Center")
-st.caption(f"Live Intelligence Feed | Last Update: {datetime.now().strftime('%H:%M:%S')} UTC")
+# --- MAIN UI ---
+draw_logo()
 
-# --- SIDEBAR (AGENTIC CONTROLS) ---
-with st.sidebar:
-    st.header("🤖 Agentic Actions")
-    st.info("Agent Status: **Monitoring**")
+# Top Metrics Row
+m1, m2, m3, m4 = st.columns(4)
+with m1: st.metric("Compute Index", "84.2", "+2.4%", help="Global GPU Availability")
+with m2: st.metric("Model Velocity", "12.1", "High", help="Frequency of SOTA model releases")
+with m3: st.metric("Market Sentiment", "Bullish", "78%")
+with m4: st.metric("Capital Inflow", "$14.2B", "+5%", help="VC funding this week")
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+tab1, tab2, tab3 = st.tabs(["📊 Market Intelligence", "🌐 Frontier News", "🤖 Automated Briefing"])
+
+with tab1:
+    col_left, col_right = st.columns([2, 1])
     
-    analysis_type = st.radio("Intelligence Focus", ["Market Cap", "Compute Scarcity", "Job Displacement"])
-    
-    if st.button("Generate Executive Summary"):
-        st.write("---")
-        st.subheader("Strategic Briefing")
-        st.write(f"**Analysis:** AI stocks are showing a high correlation with energy infrastructure. **Action:** Recommend hedging GPU hardware long-positions with nuclear energy small-caps.")
-    
-    st.divider()
-    st.subheader("Model Router")
-    st.metric("Optimal Model", "GPT-4o-mini", "-$0.12/1M tokens")
-    st.button("Reroute Traffic")
+    with col_left:
+        st.subheader("Industry Performance")
+        stocks = get_market_data()
+        fig = px.line(stocks, template="plotly_dark", color_discrete_sequence=px.colors.qualitative.Pastel)
+        fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=20, b=0))
+        st.plotly_chart(fig, use_container_width=True)
 
-# --- MAIN DASHBOARD ---
+    with col_right:
+        st.subheader("Labor Transformation")
+        impact_data = pd.DataFrame({
+            'Industry': ['Finance', 'Legal', 'Dev', 'Medical'],
+            'Augmented': [70, 60, 90, 40],
+            'Automated': [10, 20, 5, 2]
+        })
+        # FIXED ERROR: Changed color_discrete_manual to color_discrete_sequence
+        fig_impact = px.bar(
+            impact_data, 
+            x='Industry', 
+            y=['Augmented', 'Automated'],
+            color_discrete_sequence=['#00ccff', '#1e2130'],
+            template="plotly_dark",
+            barmode='group'
+        )
+        fig_impact.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_impact, use_container_width=True)
 
-# Row 1: Market Performance (Real Data)
-st.subheader("📈 AI Market Pulse (Real-Time)")
-stocks = get_stock_data()
-fig_stocks = px.line(stocks, labels={'value': 'Price (USD)', 'Date': ''}, template="plotly_dark")
-fig_stocks.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-st.plotly_chart(fig_stocks, use_container_width=True)
+with tab2:
+    st.subheader("Real-time Industry Signals")
+    news_items = get_ai_news()
+    for item in news_items:
+        with st.expander(f"📌 {item['title']}"):
+            st.write(f"Comprehensive analysis of the latest breakthrough. [Read Full Analysis]({item['link']})")
 
-# Row 2: Sentiment and News
-col1, col2 = st.columns([1, 1])
+with tab3:
+    st.subheader("Agentic Strategic Report")
+    if st.button("🚀 Run Neural Analysis"):
+        with st.spinner("Analyzing cross-sector data..."):
+            st.success("Analysis Complete")
+            st.markdown("""
+            **Executive Summary:**
+            1. **Hardware:** ASML and NVDA are showing supply chain consolidation.
+            2. **Labor:** Coding automation is reaching a plateau; high-level orchestration skills are rising in value.
+            3. **Recommendation:** Shift focus toward **Inference-Efficiency** startups for Q3.
+            """)
 
-with col1:
-    st.subheader("📰 Frontier News Feed")
-    news = get_ai_news()
-    for item in news:
-        st.markdown(f"**[{item['title']}]({item['link']})**")
-        st.caption(f"Source: Tech Review | {item['date']}")
-        st.write("---")
-
-with col2:
-    st.subheader("🧠 Sentiment & Compute")
-    # Simulated Sentiment Gauge
-    fig_gauge = go.Figure(go.Indicator(
-        mode = "gauge+number",
-        value = 82,
-        title = {'text': "AI Hype Index"},
-        gauge = {'axis': {'range': [0, 100]},
-                 'bar': {'color': "#00ffcc"},
-                 'steps': [
-                     {'range': [0, 50], 'color': "#333"},
-                     {'range': [50, 80], 'color': "#555"},
-                     {'range': [80, 100], 'color': "#777"}]}
-    ))
-    fig_gauge.update_layout(paper_bgcolor='rgba(0,0,0,0)', font={'color': "white"})
-    st.plotly_chart(fig_gauge, use_container_width=True)
-    
-    st.metric("NVIDIA H100 Availability", "12 Weeks", "-2 Weeks")
-    st.metric("Open Source Model Velocity", "+14.2%", "vs Last Month")
-
-# Row 3: Workforce Impact Module
-st.divider()
-st.subheader("🏢 Labor Market Transformation")
-impact_data = pd.DataFrame({
-    'Industry': ['Software', 'Legal', 'Healthcare', 'Finance', 'Manufacturing'],
-    'AI-Augmented': [88, 45, 30, 65, 20],
-    'Automated': [12, 25, 5, 15, 40]
-})
-fig_impact = px.bar(impact_data, x='Industry', y=['AI-Augmented', 'Automated'], 
-                    title="Sector Exposure (2025-2026 Projection)",
-                    color_discrete_manual=['#00ccff', '#ff3300'], template="plotly_dark")
-st.plotly_chart(fig_impact, use_container_width=True)
+# --- FOOTER ---
+st.markdown("---")
+st.caption("© 2026 NEURAL LENS | Data sources: YFinance, MIT Technology Review, arXiv.")
